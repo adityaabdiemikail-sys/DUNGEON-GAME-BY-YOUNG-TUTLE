@@ -1,5 +1,6 @@
 import random
 import copy
+import time
 
 running_game =  True
 
@@ -297,7 +298,7 @@ quests = {
         "progress":0,
         "target":"baby dragon",
         "reward":{
-           "gold":125,
+            "gold":125,
             "xp": 85,
         },
     },
@@ -310,7 +311,7 @@ quests = {
         "reward":{
             "gold":175,
             "xp": 125,
-       },
+        },
     }
 }
 
@@ -327,11 +328,36 @@ potions = {
     },
     "damage potion": {
         "name": "damage potion",
-        "description":" it increse damage by 3 turns",
+        "description":" it increase damage by 3 turns",
         "cost":65
     }
 }
+def normal_crit(enemy_found):
+    crit = enemy_found["damage"]* 1.5
+    
+    return crit
 
+def big_crit(enemy_found):
+    crit = enemy_found["damage"] *5
+    
+    return crit
+
+
+def random_crit_chance_for_enemy(enemy_found):
+    randomizing = random.randint(1, 100)
+    
+    if randomizing <= 30:
+        crit = normal_crit(enemy_found)
+        attack_type = "normal crit"
+    elif randomizing >= 86:
+        crit = big_crit(enemy_found)
+        attack_type = "big crit"
+    else:
+        crit = enemy_found["damage"]
+        attack_type = "normal damage"
+        
+    return crit,attack_type
+        
 
 def update_player_damage():
     player["damage"] = player["base_damage"] + player["weapon_damage"]
@@ -339,6 +365,33 @@ def update_player_damage():
 
 def update_player_defense():
     player["defense"] = player["equipped_armor"]["helmet_armor"]["defense_helmet"] + player["equipped_armor"]["body_armor"]["defense_body"] + player["equipped_armor"]["leg_armor"]["defense_leg"] + player["equipped_armor"]["boots_armor"]["defense_boots"]
+
+def normal_crit():
+    crit = player["damage"]* 1.5
+    
+    return crit
+
+def big_crit():
+    crit = player["damage"] *5
+    
+    return crit
+
+
+def random_crit_chance():
+    randomizing = random.randint(1, 100)
+    
+    if randomizing <= 30:
+        crit = normal_crit()
+        attack_type = "normal crit"
+    elif randomizing >= 96:
+        crit = big_crit()
+        attack_type = "big crit"
+    else:
+        crit = player["damage"]
+        attack_type = "normal damage"
+        
+    return crit,attack_type
+    
 
 def explore_button():
     spawn_chance = random.randint(1,10)
@@ -509,8 +562,6 @@ def shop_menu():
             return
 
 
-
-
 def heal_menu():
     if player["inventory"].get('healing potion', 0) == 0:
         print("you dont have a healing potion")
@@ -595,7 +646,7 @@ def inventory_menu():
         elif selecting == "speed potion":
             player["inventory"]["speed potion"] -= 1
             print("you have used a speed potion")
-            print("it does nothing CUZ  I HAVENT WRITEN THE CODE YET HAHAHAHHAH")
+            print("it does nothing CUZ  I HAVENT WRITTEN THE CODE YET HAHAHAHHAH")
         elif selecting in shop_armor:
             old_armor = player["equipped_armor"]
             player["equipped_armor"] = shop_armor[selecting]["name"]
@@ -608,6 +659,7 @@ def inventory_menu():
 
 
 def combat_system(enemy_found):
+    start = time.time()
     while player["health"] > 0 and enemy_found['health'] > 0:
         if player["health"] > 0:
             print("============= COMBAT MENU =============")
@@ -624,41 +676,59 @@ def combat_system(enemy_found):
             choice = input("choose: ")
             print("")
             if choice == "1" or choice == "attack":
-                damage = player["damage"]
+                damage, attack_type = random_crit_chance()
 
                 if player["damage_boost_turns"] > 0:
                     damage += 10
                     player["damage_boost_turns"] -= 1
-
+                
+                print("you prepared an attack..")
+                time.sleep(3)
                 enemy_found["health"] -= damage
 
-                print(f"you hit the {enemy_found['name']} ")
+                print(f"you hit the {enemy_found['name']} with {attack_type} ")
                 print(f"the enemies health is now at {enemy_found['health']}")
             elif choice == "2" or choice == "heal":
                 heal_menu()
             elif choice == "3" or choice == "bail":
                 print("you ran away!")
+                end = time.time()
+                print(f"your fight took {end - start:.2f} second")
+                time.sleep(3)
                 return
             else:
                 print("plz type one of the following numbers")
         else:
             print("WASTED")
+            end = time.time()
+            print(f"your fight took {end - start:.2f} seconds")
+            time.sleep(2)
+            return
 
         if enemy_found["health"] <= 0:
             print(f"the {enemy_found['name']} is dead")
             giving_loot(enemy_found)
+            end = time.time()
+            print(f"your fighted for {end - start:.2f} seconds")
+            time.sleep(3)
 
             return
 
         if enemy_found["health"] > 0:
+            damage_enemy,crit_enemy_type = random_crit_chance_for_enemy(enemy_found)
+            print(f"{enemy_found['name']} is preparing to attack")
+            time.sleep(2)
             print(f"the {enemy_found['name']} attacks!!")
-
-            damage_taken = calculation_damage_taken(enemy_found)
-            print(f"you took {damage_taken} damage")
+            damage_taken = calculation_damage_taken(damage_enemy)
+            print(f"you took {damage_taken} damage with {crit_enemy_type}")
             print(f"your health is now at {player['health']}")
         else:
             print("the enemy is dead")
+            end = time.time()
+            print(f"your fight took {end - start:.2f} seconds")
+            time.sleep(3)
             giving_loot(enemy_found)
+            
 
 def quest_randomizer():
     quest_name = random.choice(list(quests.keys()))
